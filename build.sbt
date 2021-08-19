@@ -10,6 +10,9 @@ scalaVersion := "2.13.6"
 libraryDependencies += guice
 libraryDependencies += "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test
 
+// https://mvnrepository.com/artifact/de.siegmar/logback-gelf
+libraryDependencies += "de.siegmar" % "logback-gelf" % "3.0.0"
+
 // Adds additional packages into Twirl
 //TwirlKeys.templateImports += "com.example.controllers._"
 

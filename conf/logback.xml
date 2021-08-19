@@ -23,6 +23,19 @@
     </encoder>
   </appender>
 
+  <appender name="GELF" class="de.siegmar.logbackgelf.GelfUdpAppender">
+    <graylogHost>graylog.yourhost.com</graylogHost>
+    <graylogPort>5555</graylogPort>
+
+    <!--    https://github.com/osiegmar/logback-gelf/blob/master/examples/advanced_udp.xml-->
+    <encoder class="de.siegmar.logbackgelf.GelfEncoder">
+      <staticField>facility:yourFacility</staticField>
+      <staticField>os_arch:${os.arch}</staticField>
+      <staticField>os_name:${os.name}</staticField>
+      <staticField>os_version:${os.version}</staticField>
+    </encoder>
+  </appender>
+
   <appender name="ASYNCFILE" class="ch.qos.logback.classic.AsyncAppender">
     <appender-ref ref="FILE" />
   </appender>
@@ -37,6 +50,7 @@
   <root level="WARN">
     <appender-ref ref="ASYNCFILE" />
     <appender-ref ref="ASYNCSTDOUT" />
+    <appender-ref ref="GELF" />
   </root>
 
 </configuration>
