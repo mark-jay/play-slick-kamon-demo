@@ -12,6 +12,8 @@ trait SlickSessionHolder {
   def session: SlickSession
 }
 
+case class SimpleSlickSessionHolder(session: SlickSession) extends SlickSessionHolder
+
 @Singleton
 class SlickSessionHolderSingleton @Inject() (
                                      protected val dbConfigProvider: DatabaseConfigProvider,

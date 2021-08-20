@@ -31,6 +31,8 @@ libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % "te
 libraryDependencies += "org.testcontainers" % "testcontainers" % "1.16.0" % Test
 libraryDependencies += "org.testcontainers" % "postgresql" % "1.16.0" % Test
 
+libraryDependencies += jdbc % Test
+
 libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-slick" % "5.0.0",
   "com.typesafe.play" %% "play-slick-evolutions" % "5.0.0"
