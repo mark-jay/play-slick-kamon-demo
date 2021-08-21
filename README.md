@@ -1,3 +1,20 @@
+### Description
+
+This is a play framework demo project that contains:
+ 
+ - interaction with underlying actor system
+ - interaction with sql(+ testcontainers postgres tests)
+ - interaction with rest-endpoints(+ server mocking using play)
+ - kamon metrics(port 9095)
+ - graylog logging
+
+That project contains 2 endpoints:
+
+- /counter/count - sql example
+- /prices/btc - rest-client example
+
+All service functionality was implemented in underlying actors.
+
 ### Starting
 
  - clone this project
