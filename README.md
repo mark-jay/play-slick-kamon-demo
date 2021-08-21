@@ -19,6 +19,7 @@ All service functionality was implemented in underlying actors.
 
  - clone this project
  - configure 'graylogPort', 'graylogHost', 'facility' in logback.xml
+ - rename 'name' and 'organization' in build.sbt
  - run 'sbt run'
 
 ### Starting postgres for local testing
