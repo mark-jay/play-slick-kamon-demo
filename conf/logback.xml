@@ -46,7 +46,8 @@
 
   <logger name="play" level="INFO" />
   <logger name="application" level="DEBUG" />
-  <!-- <logger name="slick" level="DEBUG" /> for sql statement logging -->
+  <!-- <logger name="slick" level="DEBUG" /> for slick logging -->
+  <!-- <logger name="slick.jdbc.JdbcBackend" level="DEBUG" /> for sql statement logging -->
 
   <root level="WARN">
     <appender-ref ref="ASYNCFILE" />
