@@ -1,7 +1,7 @@
 From 06df9ecba021eb3944fed20f9032330f8da5cb46 Mon Sep 17 00:00:00 2001
 From: "magzhan.karasayev" <fallen.s4e@gmail.com>
 Date: Sun, 10 Oct 2021 05:08:46 +0600
-Subject: [PATCH] Upd: slick removed from the project
+Subject: [PATCH] Upd: slick removed from the project. TODO: also delete slick module from application.conf
 
 ---
  app/actors/CounterActor.scala         | 36 +++------------------------
