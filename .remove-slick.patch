@@ -1,0 +1,250 @@
+From 06df9ecba021eb3944fed20f9032330f8da5cb46 Mon Sep 17 00:00:00 2001
+From: "magzhan.karasayev" <fallen.s4e@gmail.com>
+Date: Sun, 10 Oct 2021 05:08:46 +0600
+Subject: [PATCH] Upd: slick removed from the project
+
+---
+ app/actors/CounterActor.scala         | 36 +++------------------------
+ app/actors/PricesActor.scala          | 13 +++-------
+ app/services/SlickSessionHolder.scala | 25 -------------------
+ build.sbt                             | 12 ---------
+ conf/application.conf                 | 34 -------------------------
+ conf/evolutions/default/1.sql         | 12 ---------
+ 6 files changed, 7 insertions(+), 125 deletions(-)
+ delete mode 100644 app/services/SlickSessionHolder.scala
+ delete mode 100644 conf/evolutions/default/1.sql
+
+diff --git a/app/actors/CounterActor.scala b/app/actors/CounterActor.scala
+index 6a0c3bc..bfa65f8 100644
+--- a/app/actors/CounterActor.scala
++++ b/app/actors/CounterActor.scala
+@@ -1,54 +1,26 @@
+ package actors
+ 
+-import akka.{Done, NotUsed}
+ import akka.actor._
+-import akka.stream.alpakka.slick.scaladsl.{Slick, SlickSession}
+-import akka.stream.scaladsl.{Flow, Sink, Source}
+ import javax.inject._
+-import play.api.Configuration
+-import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+-import services.SlickSessionHolder
+-import slick.dbio.Effect
+-import slick.jdbc.JdbcProfile
+-import slick.sql.SqlStreamingAction
+-
+-import scala.concurrent.Future
+ 
+ // This import enables the use of the Slick sql"...",
+ // sqlu"...", and sqlt"..." String interpolators.
+ // See "http://slick.lightbend.com/doc/3.2.1/sql.html#string-interpolation"
+ //import session.profile.api._
+-import slick.jdbc.H2Profile.api._
+ 
+ 
+ class CounterActor @Inject() (
+-                               sessionHolder: SlickSessionHolder
+                              ) extends Actor {
+ 
+-  implicit val session: SlickSession = sessionHolder.session
+   implicit val system = context.system
+   implicit val executionContext = system.dispatcher
+ 
++  var counter = 0
++
+   override def receive: Receive = {
+     case "count" => {
+-      val actor = sender()
+-      val done: Future[Done] =
+-        Source.single("1")
+-          .via(Slick.flowWithPassThrough { (request: String) =>
+-            sql"SELECT MAX(COUNT) FROM COUNTER".as[Int]
+-          })
+-          .via(Slick.flowWithPassThrough { count =>
+-            val newCount = if (count.isEmpty) 1 else (count(0) + 1)
+-            (sqlu"INSERT INTO COUNTER(count) VALUES(${newCount})")
+-              .map(result => (newCount, result))
+-          })
+-          .map(item => {
+-            val (newCount, result) = item
+-            actor ! s"${newCount}(updated ${result})"
+-          })
+-          .log("nr-of-updated-rows")
+-//          .to(Sink.ignore)
+-          .run()
++      counter += 1
++      sender() ! counter
+     }
+   }
+ }
+diff --git a/app/actors/PricesActor.scala b/app/actors/PricesActor.scala
+index ed4af40..e2c6b06 100644
+--- a/app/actors/PricesActor.scala
++++ b/app/actors/PricesActor.scala
+@@ -1,28 +1,21 @@
+ package actors
+ 
+-import java.net.InetSocketAddress
+ import java.text.DecimalFormat
+ 
+ import actors.PricesActor.PriceRequest
+ import akka.Done
+ import akka.actor._
+-import akka.http.impl.util.RichHttpRequest
+ import akka.http.scaladsl.Http
+-import akka.http.scaladsl.model.{HttpHeader, HttpMethods, HttpRequest, HttpResponse, StatusCodes}
++import akka.http.scaladsl.model.{HttpMethods, HttpRequest, HttpResponse, StatusCodes}
+ import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
+ import akka.stream.OverflowStrategy
+-import akka.stream.alpakka.slick.scaladsl.{Slick, SlickSession}
+ import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+ import javax.inject._
+-import services.SlickSessionHolder
++import play.api.libs.json._
+ 
+ import scala.concurrent.Future
+-import scala.concurrent.duration.FiniteDuration
+-import scala.util.{Failure, Success, Try}
+ import scala.concurrent.duration._
+-import play.api.libs.json._
+-import play.api.libs.json._
+-import play.api.libs.functional.syntax._
++import scala.util.{Failure, Success, Try}
+ 
+ 
+ class BinancePricesActor @Inject()() extends PricesActor("www.binance.com", 443, true)
+diff --git a/app/services/SlickSessionHolder.scala b/app/services/SlickSessionHolder.scala
+deleted file mode 100644
+index 48c9939..0000000
+--- a/app/services/SlickSessionHolder.scala
++++ /dev/null
+@@ -1,25 +0,0 @@
+-package services
+-
+-import akka.actor.ActorSystem
+-import akka.stream.alpakka.slick.scaladsl.SlickSession
+-import com.google.inject.ImplementedBy
+-import javax.inject.{Inject, Singleton}
+-import play.api.db.slick.{DatabaseConfigProvider, HasDatabaseConfigProvider}
+-import slick.jdbc.JdbcProfile
+-
+-@ImplementedBy(classOf[SlickSessionHolderSingleton])
+-trait SlickSessionHolder {
+-  def session: SlickSession
+-}
+-
+-case class SimpleSlickSessionHolder(session: SlickSession) extends SlickSessionHolder
+-
+-@Singleton
+-class SlickSessionHolderSingleton @Inject() (
+-                                     protected val dbConfigProvider: DatabaseConfigProvider,
+-                                     system: ActorSystem,
+-                                   ) extends SlickSessionHolder with HasDatabaseConfigProvider[JdbcProfile] {
+-
+-  val session: SlickSession = SlickSession.forConfig(dbConfig)
+-  system.registerOnTermination(() => session.close())
+-}
+diff --git a/build.sbt b/build.sbt
+index 084c0ca..28d82d1 100644
+--- a/build.sbt
++++ b/build.sbt
+@@ -17,29 +17,17 @@ libraryDependencies += "de.siegmar" % "logback-gelf" % "3.0.0"
+ libraryDependencies += "io.kamon" %% "kamon-bundle" % "2.1.0" % Compile
+ libraryDependencies += "io.kamon" %% "kamon-prometheus" % "2.1.0" % Compile
+ 
+-libraryDependencies += "com.lightbend.akka" %% "akka-stream-alpakka-slick" % "3.0.2"
+ libraryDependencies += "com.typesafe.akka" %% "akka-stream" % AkkaVersion
+ 
+-// https://mvnrepository.com/artifact/org.postgresql/postgresql
+-libraryDependencies += "org.postgresql" % "postgresql" % "42.2.23"
+-
+ // test
+ libraryDependencies += "com.typesafe.akka" %% "akka-testkit" % AkkaVersion % "test"
+ //libraryDependencies += "org.specs2" %% "specs2-core" % "4.2.0" % "test"
+ 
+ // https://mvnrepository.com/artifact/org.testcontainers/postgresql
+ libraryDependencies += "org.testcontainers" % "testcontainers" % "1.16.0" % Test
+-libraryDependencies += "org.testcontainers" % "postgresql" % "1.16.0" % Test
+-
+-libraryDependencies += jdbc % Test
+ 
+ libraryDependencies += "com.typesafe.akka" %% "akka-http" % "10.2.3" % Test
+ 
+-libraryDependencies ++= Seq(
+-  "com.typesafe.play" %% "play-slick" % "5.0.0",
+-  "com.typesafe.play" %% "play-slick-evolutions" % "5.0.0"
+-)
+-
+ // Adds additional packages into Twirl
+ //TwirlKeys.templateImports += "com.example.controllers._"
+ 
+diff --git a/conf/application.conf b/conf/application.conf
+index 7b3bee3..bd86df6 100644
+--- a/conf/application.conf
++++ b/conf/application.conf
+@@ -11,33 +11,6 @@ play {
+     disabled += "play.api.db.DBModule"
+ 
+   }
+-
+-  # play-slick config
+-  slick {
+-    db {
+-      # The name of the configuration item from which to read databases config.
+-      # So, if set to slick.dbs, means that slick.dbs.default is where the
+-      # configuration for the database named default is found.
+-      config = "slick.dbs"
+-
+-      # The name of the default database, used when no database name is explicitly
+-      # specified.
+-      default = "default"
+-    }
+-  }
+-
+-//  enabled - Whether evolutions are enabled. If configured globally to be false, it disables the evolutions module altogether. Defaults to true.
+-//  schema - Database schema in which the generated evolution and lock tables will be saved to. No schema is set by default.
+-//  autocommit - Whether autocommit should be used. If false, evolutions will be applied in a single transaction. Defaults to true.
+-//  useLocks - Whether a locks table should be used. This must be used if you have many Play nodes that may potentially run evolutions, but you want to ensure that only one does. It will create a table called play_evolutions_lock, and use a SELECT FOR UPDATE NOWAIT or SELECT FOR UPDATE to lock it. This will only work for Postgres, Oracle, and MySQL InnoDB. It will not work for other databases. Defaults to false.
+-//  autoApply - Whether evolutions should be automatically applied. In dev mode, this will cause both ups and downs evolutions to be automatically applied. In prod mode, it will cause only ups evolutions to be automatically applied. Defaults to false.
+-//  autoApplyDowns - Whether down evolutions should be automatically applied. In prod mode, this will cause down evolutions to be automatically applied. Has no effect in dev mode. Defaults to false.
+-//  For example, to enable autoApply for all evolutions, you might set play.evolutions.autoApply=true in application.conf or in a system property. To disable autocommit for a datasource named default, you set play.evolutions.db.default.autocommit=false.
+-  evolutions.db.default {
+-    userLocks = true
+-    autocommit = false
+-    autoApply = true
+-  }
+ }
+ 
+ play.http.errorHandler = controllers.error_handling.ErrorHandler
+@@ -54,10 +27,3 @@ play.filters.csrf.header.bypassHeaders {
+ 
+ //play.http.secret.key="setMeInProductionInEnv"
+ 
+-# Default database configuration
+-# http://slick.typesafe.com/doc/3.1.0/api/index.html#slick.jdbc.JdbcBackend$DatabaseFactoryDef@forConfig%28path:String,config:com.typesafe.config.Config,driver:java.sql.Driver,classLoader:ClassLoader%29:JdbcBackend.this.Database
+-slick.dbs.default.profile="slick.jdbc.PostgresProfile$"
+-slick.dbs.default.db.driver="org.postgresql.Driver"
+-slick.dbs.default.db.url="jdbc:postgresql://127.0.0.1:5432/my_database"
+-slick.dbs.default.db.user="postgres"
+-slick.dbs.default.db.password="postgres"
+diff --git a/conf/evolutions/default/1.sql b/conf/evolutions/default/1.sql
+deleted file mode 100644
+index d4ab6e6..0000000
+--- a/conf/evolutions/default/1.sql
++++ /dev/null
+@@ -1,12 +0,0 @@
+--- Users schema
+-
+--- !Ups
+-
+-CREATE TABLE COUNTER (
+-                      id serial NOT NULL PRIMARY KEY,
+-                      count bigint NOT NULL
+-);
+-
+--- !Downs
+-
+--- DROP TABLE COUNTER;
+-- 
+2.32.0
+
